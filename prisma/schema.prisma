@@ -1,0 +1,171 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  phone        String?
+  vehiclePlate String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  
+  reservations Reservation[]
+  occupancyLogs OccupancyLog[]
+  workplace    Workplace?     @relation(fields: [workplaceId], references: [id])
+  workplaceId  String?
+}
+
+model Workplace {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  users       User[]
+  parkingLots ParkingLot[]
+}
+
+model ParkingLot {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  lat         Float
+  lng         Float
+  totalSpots  Int
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  workplace   Workplace?   @relation(fields: [workplaceId], references: [id])
+  workplaceId String?
+  spots       ParkingSpot[]
+  iotDevices  IoTDevice[]
+}
+
+enum SpotType {
+  GENERAL
+  PCD
+  ELECTRIC
+}
+
+enum SpotStatus {
+  FREE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+model ParkingSpot {
+  id            String      @id @default(cuid())
+  number        String
+  type          SpotType    @default(GENERAL)
+  status        SpotStatus  @default(FREE)
+  floor         Int?
+  section       String?
+  lat           Float?
+  lng           Float?
+  hasCharger    Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  parkingLot    ParkingLot     @relation(fields: [parkingLotId], references: [id])
+  parkingLotId  String
+  reservations  Reservation[]
+  occupancyLogs OccupancyLog[]
+  iotEvents     IoTEvent[]
+  
+  @@unique([parkingLotId, number])
+}
+
+model IoTDevice {
+  id           String   @id @default(cuid())
+  deviceId     String   @unique
+  name         String
+  type         String
+  status       String   @default("active")
+  location     String?
+  lastPing     DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  parkingLot   ParkingLot @relation(fields: [parkingLotId], references: [id])
+  parkingLotId String
+  events       IoTEvent[]
+}
+
+enum IoTEventType {
+  ARRIVAL
+  DEPARTURE
+  RESERVATION
+  MAINTENANCE
+  ERROR
+}
+
+model IoTEvent {
+  id          String        @id @default(cuid())
+  type        IoTEventType
+  data        Json
+  vehiclePlate String?
+  timestamp   DateTime      @default(now())
+  
+  device      IoTDevice     @relation(fields: [deviceId], references: [id])
+  deviceId    String
+  spot        ParkingSpot?  @relation(fields: [spotId], references: [id])
+  spotId      String?
+  
+  @@index([timestamp])
+  @@index([deviceId])
+  @@index([spotId])
+}
+
+model Reservation {
+  id           String      @id @default(cuid())
+  startTime    DateTime
+  endTime      DateTime
+  status       String      @default("active")
+  vehiclePlate String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  
+  user         User        @relation(fields: [userId], references: [id])
+  userId       String
+  spot         ParkingSpot @relation(fields: [spotId], references: [id])
+  spotId       String
+  
+  @@index([startTime, endTime])
+  @@index([status])
+}
+
+model OccupancyLog {
+  id           String      @id @default(cuid())
+  entryTime    DateTime    @default(now())
+  exitTime     DateTime?
+  duration     Int?
+  vehiclePlate String?
+  
+  user         User?       @relation(fields: [userId], references: [id])
+  userId       String?
+  spot         ParkingSpot @relation(fields: [spotId], references: [id])
+  spotId       String
+  
+  @@index([entryTime])
+  @@index([spotId])
+}
