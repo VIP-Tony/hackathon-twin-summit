@@ -92,8 +92,8 @@ export const ParkingMap = ({ spots, selectedType, onSpotClick, selectedLot }: Pa
                 key={lot}
                 onClick={() => setCurrentLot(lot)}
                 className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${currentLot === lot
-                    ? 'bg-violet-500 text-white'
-                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  ? 'bg-violet-500 text-white'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                   }`}
               >
                 E{lot} ({occupancyRate}%)
@@ -135,8 +135,8 @@ export const ParkingMap = ({ spots, selectedType, onSpotClick, selectedLot }: Pa
                       <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all ${Number(occupancyRate) > 80 ? 'bg-red-500' :
-                              Number(occupancyRate) > 50 ? 'bg-yellow-500' :
-                                'bg-green-500'
+                            Number(occupancyRate) > 50 ? 'bg-yellow-500' :
+                              'bg-green-500'
                             }`}
                           style={{ width: `${occupancyRate}%` }}
                         />
@@ -154,18 +154,44 @@ export const ParkingMap = ({ spots, selectedType, onSpotClick, selectedLot }: Pa
                       <div className="grid grid-cols-10 gap-1.5">
                         {stats.spots.map((spot) => {
                           const Icon = SPOT_TYPES[spot.type].icon;
+                          const status = SPOT_STATUS[spot.status];
+                          const typeColor = SPOT_TYPES[spot.type].color;
+
                           return (
                             <button
                               key={spot.id}
                               onClick={() => onSpotClick(spot)}
-                              className={`aspect-square rounded flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg ${SPOT_STATUS[spot.status].bgColor} ${spot.type === 'PCD' ? 'ring-1 ring-blue-400' : ''
-                                } ${spot.type === 'ELECTRIC' ? 'ring-1 ring-green-400' : ''} ${spot.type === 'MOTORCYCLE' ? 'ring-1 ring-orange-400' : ''
-                                } relative group`}
-                              title={`${spot.number} - ${SPOT_TYPES[spot.type].label} - ${SPOT_STATUS[spot.status].label}`}
+                              className={`relative aspect-square rounded-xl ${status.bgColor} ${status.glowColor} 
+                  border-2 ${status.borderColor} transition-all duration-300 
+                  hover:scale-110 hover:shadow-2xl hover:z-10 group overflow-hidden`}
                             >
-                              <Icon className="w-3 h-3" />
-                              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                                {spot.number}
+                              <div className="absolute inset-0 bg-linear-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                              <div className={`absolute inset-0 rounded-xl ring-2 ring-offset-2 ring-offset-slate-900 opacity-60
+                  ${typeColor === 'blue' ? 'ring-blue-400' : ''}
+                  ${typeColor === 'green' ? 'ring-green-400' : ''}
+                  ${typeColor === 'orange' ? 'ring-orange-400' : ''}
+                  ${typeColor === 'purple' ? 'ring-purple-400' : ''}
+                `}></div>
+
+                              <div className="relative h-full flex flex-col items-center justify-center p-2">
+                                <Icon className="w-5 h-5 text-white mb-1 drop-shadow-lg" strokeWidth={2.5} />
+                                <div className="text-[11px] font-semibold text-white drop-shadow-lg">
+                                  {spot.number}
+                                </div>
+                              </div>
+
+                              <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-20 shadow-xl border border-slate-700">
+                                <div className="font-bold mb-1">{spot.number}</div>
+                                <div className="text-slate-300">{SPOT_TYPES[spot.type].label}</div>
+                                <div className={`${spot.status === 'FREE' ? 'text-emerald-400' :
+                                  spot.status === 'OCCUPIED' ? 'text-red-400' :
+                                    spot.status === 'RESERVED' ? 'text-amber-400' :
+                                      'text-gray-400'
+                                  }`}>
+                                  {status.label}
+                                </div>
+                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-r border-b border-slate-700 rotate-45"></div>
                               </div>
                             </button>
                           );

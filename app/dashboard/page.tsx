@@ -225,7 +225,7 @@ export default function ParkingDashboard() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-400 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-linear-to-r from-violet-400 to-purple-600 bg-clip-text text-transparent">
               Dashboard do Estacionamento
             </h1>
             <p className="text-gray-400 mt-1">Monitoramento em tempo real</p>
