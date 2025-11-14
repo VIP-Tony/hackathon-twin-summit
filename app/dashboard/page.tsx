@@ -6,37 +6,132 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { MetricCard } from "./_components/MetricCard";
 import { ParkingMap } from "./_components/ParkingMap";
 import { EventsFeed } from "./_components/EventsFeed";
-import { ParkingSpot, SpotType } from "@/lib/generated/prisma/client";
+import { SpotType } from "@/lib/generated/prisma/enums";
 
-// Dados mockados
+// Geração de dados mockados
 const generateSpots = () => {
   const spots = [];
   const statuses = ['FREE', 'OCCUPIED', 'RESERVED'];
-  const types = ['GENERAL', 'PCD', 'ELECTRIC'];
+  let id = 1;
   
-  for (let i = 1; i <= 50; i++) {
+  // ESTACIONAMENTO 1
+  for (let i = 1; i <= 5; i++) {
     spots.push({
-      id: i,
-      number: `A${i.toString().padStart(3, '0')}`,
-      type: types[Math.floor(Math.random() * (i < 10 ? 2 : 3))],
+      id: id++,
+      number: `E1-PCD-${i.toString().padStart(2, '0')}`,
+      type: 'PCD',
+      parkingLot: 1,
+      sector: 'A',
       status: statuses[Math.floor(Math.random() * statuses.length)],
-      lat: -12.9714 + (Math.random() - 0.5) * 0.001,
-      lng: -38.5014 + (Math.random() - 0.5) * 0.001,
       lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
     });
   }
+  
+  for (let i = 1; i <= 3; i++) {
+    spots.push({
+      id: id++,
+      number: `E1-ELE-${i.toString().padStart(2, '0')}`,
+      type: 'ELECTRIC',
+      parkingLot: 1,
+      sector: 'A',
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
+    });
+  }
+  
+  for (let i = 1; i <= 60; i++) {
+    const sector = i <= 20 ? 'B' : i <= 40 ? 'C' : 'D';
+    spots.push({
+      id: id++,
+      number: `E1-${sector}-${i.toString().padStart(2, '0')}`,
+      type: 'GENERAL',
+      parkingLot: 1,
+      sector,
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
+    });
+  }
+  
+  for (let i = 1; i <= 18; i++) {
+    spots.push({
+      id: id++,
+      number: `E1-E-M${i.toString().padStart(2, '0')}`,
+      type: 'MOTORCYCLE',
+      parkingLot: 1,
+      sector: 'E',
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
+    });
+  }
+  
+  // ESTACIONAMENTO 2
+  for (let i = 1; i <= 2; i++) {
+    spots.push({
+      id: id++,
+      number: `E2-PCD-${i.toString().padStart(2, '0')}`,
+      type: 'PCD',
+      parkingLot: 2,
+      sector: 'A',
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
+    });
+  }
+  
+  for (let i = 1; i <= 5; i++) {
+    spots.push({
+      id: id++,
+      number: `E2-ELE-${i.toString().padStart(2, '0')}`,
+      type: 'ELECTRIC',
+      parkingLot: 2,
+      sector: 'A',
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
+    });
+  }
+  
+  for (let i = 1; i <= 96; i++) {
+    const sector = i <= 24 ? 'B' : i <= 48 ? 'C' : i <= 72 ? 'D' : 'E';
+    spots.push({
+      id: id++,
+      number: `E2-${sector}-${i.toString().padStart(2, '0')}`,
+      type: 'GENERAL',
+      parkingLot: 2,
+      sector,
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
+    });
+  }
+  
+  for (let i = 1; i <= 6; i++) {
+    spots.push({
+      id: id++,
+      number: `E2-F-M${i.toString().padStart(2, '0')}`,
+      type: 'MOTORCYCLE',
+      parkingLot: 2,
+      sector: 'F',
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
+    });
+  }
+  
   return spots;
 };
 
 const generateEvents = () => {
   const events = [];
   const actions = ['ARRIVAL', 'DEPARTURE'];
+  const lots = [1, 2];
+  const sectors = ['A', 'B', 'C', 'D', 'E', 'F'];
   
   for (let i = 0; i < 15; i++) {
+    const lot = lots[Math.floor(Math.random() * lots.length)];
+    const sector = sectors[Math.floor(Math.random() * sectors.length)];
+    const num = Math.floor(Math.random() * 20) + 1;
+    
     events.push({
       id: i,
       deviceId: `IOT-${Math.floor(Math.random() * 10) + 1}`,
-      spotNumber: `A${Math.floor(Math.random() * 50 + 1).toString().padStart(3, '0')}`,
+      spotNumber: `E${lot}-${sector}-${num.toString().padStart(2, '0')}`,
       action: actions[Math.floor(Math.random() * actions.length)],
       vehicle: `ABC-${Math.floor(Math.random() * 9000) + 1000}`,
       timestamp: new Date(Date.now() - Math.random() * 7200000).toISOString()
@@ -57,13 +152,13 @@ const generateHourlyData = () => {
   return data;
 };
 
-export default function ParkingDashboard() {
-  const [spots, setSpots] = useState<any[]>(generateSpots());
-  const [events, setEvents] = useState<any[]>(generateEvents());
-  const [selectedType, setSelectedType] = useState<SpotType | null>(null);
-  const [selectedSpot, setSelectedSpot] = useState<ParkingSpot | null>(null);
 
-  // Simular WebSocket updates
+export default function ParkingDashboard() {
+  const [spots, setSpots] = useState(generateSpots());
+  const [events, setEvents] = useState(generateEvents());
+  const [selectedType, setSelectedType] = useState<SpotType | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState<any | null>(null);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setSpots(prev => {
@@ -79,10 +174,16 @@ export default function ParkingDashboard() {
       });
 
       setEvents(prev => {
+        const lots = [1, 2];
+        const sectors = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const lot = lots[Math.floor(Math.random() * lots.length)];
+        const sector = sectors[Math.floor(Math.random() * sectors.length)];
+        const num = Math.floor(Math.random() * 20) + 1;
+        
         const newEvent = {
           id: Date.now(),
           deviceId: `IOT-${Math.floor(Math.random() * 10) + 1}`,
-          spotNumber: `A${Math.floor(Math.random() * 50 + 1).toString().padStart(3, '0')}`,
+          spotNumber: `E${lot}-${sector}-${num.toString().padStart(2, '0')}`,
           action: Math.random() > 0.5 ? 'ARRIVAL' : 'DEPARTURE',
           vehicle: `ABC-${Math.floor(Math.random() * 9000) + 1000}`,
           timestamp: new Date().toISOString()
@@ -94,16 +195,17 @@ export default function ParkingDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const stats = useMemo(() => {
+  const stats: any = useMemo(() => {
     const total = spots.length;
     const occupied = spots.filter(s => s.status === 'OCCUPIED').length;
     const free = spots.filter(s => s.status === 'FREE').length;
     const reserved = spots.filter(s => s.status === 'RESERVED').length;
     
-    const byType: Record<SpotType, ParkingSpot[]> = {
+    const byType = {
       GENERAL: spots.filter(s => s.type === 'GENERAL'),
       PCD: spots.filter(s => s.type === 'PCD'),
-      ELECTRIC: spots.filter(s => s.type === 'ELECTRIC')
+      ELECTRIC: spots.filter(s => s.type === 'ELECTRIC'),
+      MOTORCYCLE: spots.filter(s => s.type === 'MOTORCYCLE')
     };
 
     return { total, occupied, free, reserved, byType, occupancyRate: ((occupied / total) * 100).toFixed(1) };
@@ -112,7 +214,8 @@ export default function ParkingDashboard() {
   const chartData = useMemo(() => [
     { name: 'Geral', value: stats.byType.GENERAL.length, color: '#7C3AED' },
     { name: 'PCD', value: stats.byType.PCD.length, color: '#3B82F6' },
-    { name: 'Elétrico', value: stats.byType.ELECTRIC.length, color: '#10B981' }
+    { name: 'Elétrico', value: stats.byType.ELECTRIC.length, color: '#10B981' },
+    { name: 'Moto', value: stats.byType.MOTORCYCLE.length, color: '#F59E0B' }
   ], [stats]);
 
   const hourlyData = useMemo(() => generateHourlyData(), []);
@@ -120,10 +223,9 @@ export default function ParkingDashboard() {
   return (
     <div className="min-h-screen bg-black text-white p-6">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-linear-to-r from-violet-400 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-400 to-purple-600 bg-clip-text text-transparent">
               Dashboard do Estacionamento
             </h1>
             <p className="text-gray-400 mt-1">Monitoramento em tempo real</p>
@@ -134,7 +236,6 @@ export default function ParkingDashboard() {
           </div>
         </div>
 
-        {/* Métricas Principais */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
             title="Taxa de Ocupação"
@@ -167,54 +268,47 @@ export default function ParkingDashboard() {
           />
         </div>
 
-        {/* Filtros */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setSelectedType(null)}
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              !selectedType 
-                ? 'bg-violet-500 text-white' 
-                : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
+              !selectedType ? 'bg-violet-500 text-white' : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
             }`}
           >
             Todos ({spots.length})
           </button>
           {Object.entries(SPOT_TYPES).map(([key, type]) => {
             const Icon = type.icon;
-            const typedKey = key as SpotType;
+            const count = stats.byType[key]?.length || 0;
             return (
               <button
                 key={key}
                 onClick={() => setSelectedType(key as SpotType)}
                 className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                  selectedType === key
-                    ? 'bg-violet-500 text-white'
-                    : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
+                  selectedType === key ? 'bg-violet-500 text-white' : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                {type.label} ({stats.byType[typedKey].length})
+                {type.label} ({count})
               </button>
             );
           })}
         </div>
 
-        {/* Grid Principal */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <ParkingMap
               spots={spots} 
               selectedType={selectedType}
               onSpotClick={setSelectedSpot}
+              selectedLot={1}
             />
           </div>
-          
           <div>
             <EventsFeed events={events} />
           </div>
         </div>
 
-        {/* Gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Distribuição por Tipo</h3>
@@ -257,7 +351,6 @@ export default function ParkingDashboard() {
           </div>
         </div>
 
-        {/* Modal de Detalhes da Vaga */}
         {selectedSpot && (
           <div 
             className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
@@ -268,7 +361,10 @@ export default function ParkingDashboard() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white">Vaga {selectedSpot.number}</h3>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Vaga {selectedSpot.number}</h3>
+                  <p className="text-gray-400 text-sm mt-1">Estacionamento {selectedSpot.parkingLot} - Setor {selectedSpot.sector}</p>
+                </div>
                 <button 
                   onClick={() => setSelectedSpot(null)}
                   className="text-gray-400 hover:text-white"
@@ -297,7 +393,7 @@ export default function ParkingDashboard() {
                 <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                   <span className="text-gray-400">Última Atualização</span>
                   <span className="text-white text-sm">
-                    {new Date(selectedSpot.updatedAt).toLocaleString('pt-BR')}
+                    {new Date(selectedSpot.lastUpdate).toLocaleString('pt-BR')}
                   </span>
                 </div>
 
