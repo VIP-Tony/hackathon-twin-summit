@@ -53,7 +53,7 @@ export function gerarVeiculos() {
             arrivalMinutes: arrival,
             arrivalTimeStr: formatTime(arrival),
 
-            userId: "cmhzuzg0z0007u400fscu1cci",
+            userId: '',
             pl1: "cmhzuzfko0002u400hs9jrg3s",
             pl2: "cmhzuzfwn0005u400o4w5x3n7",
         });
