@@ -1,4 +1,3 @@
-// app/api/parking/allocate/route.ts
 import { NextResponse } from 'next/server';
 import { alocarVaga } from '@/calculo/alocarvaga'; 
 
