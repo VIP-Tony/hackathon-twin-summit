@@ -43,6 +43,8 @@ export function gerarVeiculos() {
 
     const veiculos = [];
 
+    
+
     for (let i = 0; i < TOTAL_VEICULOS; i++) {
         const arrival = randomInt(450, 540);
 
@@ -53,9 +55,9 @@ export function gerarVeiculos() {
             arrivalMinutes: arrival,
             arrivalTimeStr: formatTime(arrival),
 
-            userId: '',
-            parkingLot1Id: "cmhzuzfko0002u400hs9jrg3s",
-            parkingLot2Id: "cmhzuzfwn0005u400o4w5x3n7",
+            userId: "",
+            parkingLot1Id: "",
+            parkingLot2Id: "",
 });
     }
 
