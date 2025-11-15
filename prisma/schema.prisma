@@ -45,7 +45,6 @@ model Workplace {
 }
 
 model ParkingLot {
-  id          String   @id @default(cuid())
   name        String
   address     String
   lat         Float
@@ -54,6 +53,16 @@ model ParkingLot {
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  address      String
+  lat          Float
+  lng          Float
+  totalSpots   Int
+  totalCharger Int      @default(0)
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   workplace   Workplace?    @relation(fields: [workplaceId], references: [id])
   workplaceId String?
