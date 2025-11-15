@@ -44,10 +44,9 @@ export function gerarVeiculos() {
     const veiculos = [];
 
     
+    let arrival: number = 450;
 
     for (let i = 0; i < TOTAL_VEICULOS; i++) {
-        const arrival = randomInt(450, 540);
-
         veiculos.push({
             id: i + 1,
             tipo_carro: tipos[i],
@@ -61,7 +60,10 @@ export function gerarVeiculos() {
             userId: "",
             parkingLot1Id: "",
             parkingLot2Id: "",
-});
+        });
+        if (i%2 && i!=0){
+            arrival+=1;
+        }
     }
 
     return veiculos;
