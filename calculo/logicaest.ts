@@ -77,7 +77,7 @@ export function acharVagaEletrico(
 	vagas_dir: VagasInfo,
 	situacao: boolean
 ): 'esquerda' | 'direita' | null {
-	if (engarrafamento(situacao, vagas_esq)) return 'esquerda';
+	if (engarrafamento(situacao, vagas_dir)) return 'direita';
 
 	if (setor_trabalho === 'esquerda' && vagaEspecial(vagas_esq, 'ELECTRIC'))
 		return 'esquerda';
@@ -109,7 +109,14 @@ export function acharVagaNormalEMoto(
 	situacao: boolean,
 	tipo_vaga: 'vagasLivres' | 'motoLivre'
 ): 'esquerda' | 'direita' | null {
-	if (engarrafamento(situacao, vagas_esq)) return 'esquerda';
+	if (situacao) {
+		if (tipo_vaga === 'motoLivre' && vagas_dir.motoLivre > 0) {
+			return 'direita';
+		}
+		if (tipo_vaga === 'vagasLivres' && vagas_dir.vagasLivres > 0) {
+			return 'direita';
+		}
+	}
 
 	if (
 		setor_trabalho === 'esquerda' &&
