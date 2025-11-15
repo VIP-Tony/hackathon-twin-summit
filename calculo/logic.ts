@@ -170,3 +170,40 @@ export function acharVaga(
 		'vagasLivres'
 	);
 }
+
+export type resultado = {
+	estacionamento: 1 | 2;
+	tipoVaga: SpotType;
+}
+
+export function retornarVaga(
+	tipo_carro: TipoCarro,
+	setor_trabalho: SetorTrabalho,
+	situacao: boolean,
+	vagas1: VagasInfo,
+	vagas2: VagasInfo
+): resultado | null {
+	const lado = acharVaga(tipo_carro, setor_trabalho, situacao, vagas1, vagas2);
+	if (!lado) return null;
+
+	const estacionamento = lado === 'esquerda' ? 1 : 2;
+	const vagasEscolhido = lado === 'esquerda' ? vagas1 : vagas2;
+
+	let tipoVaga: SpotType | null = null;
+
+	if (tipo_carro === 'PCD') {
+		if (vagasEscolhido.pcdLivre > 0) tipoVaga = SpotType.PCD;
+		else if (vagasEscolhido.vagasLivres > 0) tipoVaga = SpotType.GENERAL;
+	} else if (tipo_carro === 'ELECTRIC') {
+		if (vagasEscolhido.eletricoLivre > 0) tipoVaga = SpotType.ELECTRIC;
+		else if (vagasEscolhido.vagasLivres > 0) tipoVaga = SpotType.GENERAL;
+	} else if (tipo_carro === 'MOTORCYCLE') {
+		if (vagasEscolhido.motoLivre > 0) tipoVaga = SpotType.MOTORCYCLE;
+	} else {
+		if (vagasEscolhido.vagasLivres > 0) tipoVaga = SpotType.GENERAL;
+	}
+
+	if (!tipoVaga) return null;
+
+	return { estacionamento, tipoVaga };
+}
