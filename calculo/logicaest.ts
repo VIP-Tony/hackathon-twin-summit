@@ -179,33 +179,45 @@ export type Resultado = {
 }
 
 export function retornarVaga(
-	tipo_carro: TipoCarro,
-	setor_trabalho: SetorTrabalho,
-	situacao: boolean,
-	vagas1: VagasInfo, 
-	vagas2: VagasInfo 
+    tipo_carro: TipoCarro,
+    setor_trabalho: SetorTrabalho,
+    situacao: boolean,
+    vagas1: VagasInfo, 
+    vagas2: VagasInfo 
 ): Resultado | null {
-	const lado = acharVaga(tipo_carro, setor_trabalho, situacao, vagas1, vagas2);
-	if (!lado) return null;
+    const ladoPreferido = acharVaga(tipo_carro, setor_trabalho, situacao, vagas1, vagas2);
+    if (!ladoPreferido) return null;
 
-	const estacionamento = lado === 'esquerda' ? 1 : 2;
-	const vagasEscolhido = lado === 'esquerda' ? vagas1 : vagas2;
+    const lados: ('esquerda' | 'direita')[] =
+        ladoPreferido === 'esquerda' ? ['esquerda', 'direita'] : ['direita', 'esquerda'];
 
-	let tipoVaga: SpotType | null = null;
+    const tentaLado = (lado: 'esquerda' | 'direita'): Resultado | null => {
+        const estacionamento = lado === 'esquerda' ? 1 : 2;
+        const vagasEscolhido = lado === 'esquerda' ? vagas1 : vagas2;
 
-	if (tipo_carro === 'PCD') {
-		if (vagasEscolhido.pcdLivre > 0) tipoVaga = SpotType.PCD;
-		else if (vagasEscolhido.vagasLivres > 0) tipoVaga = SpotType.GENERAL;
-	} else if (tipo_carro === 'ELECTRIC') {
-		if (vagasEscolhido.eletricoLivre > 0) tipoVaga = SpotType.ELECTRIC;
-		else if (vagasEscolhido.vagasLivres > 0) tipoVaga = SpotType.GENERAL;
-	} else if (tipo_carro === 'MOTORCYCLE') {
-		if (vagasEscolhido.motoLivre > 0) tipoVaga = SpotType.MOTORCYCLE;
-	} else {
-		if (vagasEscolhido.vagasLivres > 0) tipoVaga = SpotType.GENERAL;
-	}
+        let tipoVaga: SpotType | null = null;
 
-	if (!tipoVaga) return null;
+        if (tipo_carro === 'PCD') {
+            if (vagasEscolhido.pcdLivre > 0) tipoVaga = SpotType.PCD;
+            else if (vagasEscolhido.vagasLivres > 0) tipoVaga = SpotType.GENERAL;
+        } else if (tipo_carro === 'ELECTRIC') {
+            if (vagasEscolhido.eletricoLivre > 0) tipoVaga = SpotType.ELECTRIC;
+            else if (vagasEscolhido.vagasLivres > 0) tipoVaga = SpotType.GENERAL;
+        } else if (tipo_carro === 'MOTORCYCLE') {
+            if (vagasEscolhido.motoLivre > 0) tipoVaga = SpotType.MOTORCYCLE;
+        } else {
+            if (vagasEscolhido.vagasLivres > 0) tipoVaga = SpotType.GENERAL;
+        }
 
-	return { estacionamento, tipoVaga };
+        if (!tipoVaga) return null;
+
+        return { estacionamento, tipoVaga };
+    };
+
+    for (const lado of lados) {
+        const resultado = tentaLado(lado);
+        if (resultado) return resultado;
+    }
+
+    return null;
 }
