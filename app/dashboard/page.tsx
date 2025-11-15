@@ -99,7 +99,7 @@ export default function ParkingDashboard() {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchDashboardData();
-    }, 10000);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, []);
