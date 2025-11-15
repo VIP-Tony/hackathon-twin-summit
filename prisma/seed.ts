@@ -1,7 +1,15 @@
 import { PrismaClient } from '@prisma/client';
-import { IoTEventType, SpotStatus, SpotType } from './generated/prisma/enums';
 
 const prisma = new PrismaClient();
+// é um enum que recebe a chave e retorna a string
+type SpotStatus = keyof typeof SpotStatusEnum;
+
+const SpotStatusEnum = {
+  FREE: 'FREE',
+  OCCUPIED: 'OCCUPIED',
+  RESERVED: 'RESERVED',
+};
+
 
 async function main() {
   console.log('🌱 Seeding database...');
@@ -17,14 +25,14 @@ async function main() {
     },
   });
 
-  // Criar ParkingLot
+  // Criar ParkingLot (cria sem os totais, vamos atualizar depois)
   const parkingLot = await prisma.parkingLot.create({
     data: {
       name: 'Estacionamento Principal',
       address: 'Av. Tancredo Neves, 450',
       lat: -12.9714,
       lng: -38.5014,
-      totalSpots: 100,
+      totalSpots: 100, // preenchido inicialmente; outros totais serão atualizados
       workplaceId: workplace.id,
     },
   });
@@ -51,28 +59,85 @@ async function main() {
     }),
   ]);
 
-  // Criar Vagas
-  const spots = [];
-  const spotTypes: SpotType[] = ['GENERAL', 'GENERAL', 'GENERAL', 'PCD', 'ELECTRIC'];
-  
+  // Criar Vagas (spots)
+  const spots: {
+    number: string;
+    type: SpotType;
+    status: SpotStatus;
+    floor: number;
+    section: string;
+    lat: number;
+    lng: number;
+    hasCharger: boolean;
+    parkingLotId: string;
+  }[] = [];
+
+  const spotPool: SpotType[] = [
+    SpotType.GENERAL,
+    SpotType.GENERAL,
+    SpotType.GENERAL,
+    SpotType.PCD,
+    SpotType.ELECTRIC,
+  ];
+
   for (let i = 1; i <= 100; i++) {
-    const typeIndex = i <= 10 ? 3 : Math.floor(Math.random() * spotTypes.length);
-    const type = spotTypes[typeIndex];
-    
+    // garantir pelo menos 10 PCD nos primeiros 10
+    const typeIndex = i <= 10 ? 3 : Math.floor(Math.random() * spotPool.length);
+    const type = spotPool[typeIndex];
+
+    const hasCharger = type === SpotType.ELECTRIC ? Math.random() > 0.3 : false; // ~70% das elétricas tem carregador
+
     spots.push({
       number: `A${i.toString().padStart(3, '0')}`,
       type,
-      status: ['FREE', 'OCCUPIED', 'RESERVED'][Math.floor(Math.random() * 3)] as SpotStatus,
+      status: [SpotStatus.FREE, SpotStatus.OCCUPIED, SpotStatus.RESERVED][
+        Math.floor(Math.random() * 3)
+      ] as SpotStatus,
       floor: Math.floor((i - 1) / 20) + 1,
       section: String.fromCharCode(65 + Math.floor((i - 1) / 10)),
       lat: -12.9714 + (Math.random() - 0.5) * 0.002,
       lng: -38.5014 + (Math.random() - 0.5) * 0.002,
-      hasCharger: type === 'ELECTRIC',
+      hasCharger,
       parkingLotId: parkingLot.id,
     });
   }
 
+  // Inserir todos os spots
   await prisma.parkingSpot.createMany({ data: spots });
+
+  // Atualizar totais do parkingLot de acordo com os spots gerados
+  const totalSpots = spots.length;
+  const totalCharger = spots.filter((s) => s.hasCharger).length;
+  const totalGeneralSpots = spots.filter((s) => s.type === SpotType.GENERAL).length;
+  const totalGeneralSpotsCharger = spots.filter(
+    (s) => s.type === SpotType.GENERAL && s.hasCharger
+  ).length;
+  const totalPCDSpots = spots.filter((s) => s.type === SpotType.PCD).length;
+  const totalPCDSpotsCharger = spots.filter((s) => s.type === SpotType.PCD && s.hasCharger).length;
+  const totalElectricSpots = spots.filter((s) => s.type === SpotType.ELECTRIC).length;
+  const totalElectricSpotsCharger = spots.filter(
+    (s) => s.type === SpotType.ELECTRIC && s.hasCharger
+  ).length;
+  const totalMotorcycleSpots = spots.filter((s) => s.type === SpotType.MOTORCYCLE).length;
+  const totalMotorcycleSpotsCharger = spots.filter(
+    (s) => s.type === SpotType.MOTORCYCLE && s.hasCharger
+  ).length;
+
+  await prisma.parkingLot.update({
+    where: { id: parkingLot.id },
+    data: {
+      totalSpots,
+      totalCharger,
+      totalGeneralSpots,
+      totalGeneralSpotsCharger,
+      totalPCDSpots,
+      totalPCDSpotsCharger,
+      totalElectricSpots,
+      totalElectricSpotsCharger,
+      totalMotorcycleSpots,
+      totalMotorcycleSpotsCharger,
+    },
+  });
 
   // Criar Dispositivos IoT
   const devices = [];
@@ -90,15 +155,16 @@ async function main() {
 
   await prisma.ioTDevice.createMany({ data: devices });
 
-  // Criar Eventos IoT
+  // Buscar alguns spots e devices para gerar eventos
   const createdSpots = await prisma.parkingSpot.findMany({ take: 20 });
   const createdDevices = await prisma.ioTDevice.findMany();
 
+  // Criar Eventos IoT
   const events = [];
   for (let i = 0; i < 50; i++) {
     const spot = createdSpots[Math.floor(Math.random() * createdSpots.length)];
     const device = createdDevices[Math.floor(Math.random() * createdDevices.length)];
-    
+
     events.push({
       type: Math.random() > 0.5 ? IoTEventType.ARRIVAL : IoTEventType.DEPARTURE,
       data: {
