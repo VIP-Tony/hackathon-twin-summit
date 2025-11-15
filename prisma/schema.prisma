@@ -137,8 +137,8 @@ model IoTEvent {
   vehiclePlate String?
   timestamp    DateTime     @default(now())
 
-  device   IoTDevice    @relation(fields: [deviceId], references: [id])
-  deviceId String
+  device   IoTDevice?    @relation(fields: [deviceId], references: [id])
+  deviceId String?
   spot     ParkingSpot? @relation(fields: [spotId], references: [id])
   spotId   String?
 

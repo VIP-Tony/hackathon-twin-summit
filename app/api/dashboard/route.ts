@@ -3,6 +3,10 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
+    // Testar conexão do banco primeiro
+    await prisma.$connect();
+    console.log('Database connected successfully');
+
     // Buscar todas as vagas com informações do estacionamento
     const spots = await prisma.parkingSpot.findMany({
       include: {
@@ -19,6 +23,8 @@ export async function GET() {
         { number: 'asc' }
       ]
     });
+
+    console.log(`Found ${spots.length} parking spots`);
 
     // Buscar eventos recentes (últimas 15 entradas)
     const recentEvents = await prisma.ioTEvent.findMany({
@@ -39,22 +45,34 @@ export async function GET() {
           }
         }
       }
+    }).catch(err => {
+      console.error('Error fetching IoTEvents:', err);
+      return []; // Retornar array vazio se falhar
     });
+
+    console.log(`Found ${recentEvents.length} recent events`);
 
     // Buscar dados de ocupação por hora (últimas 24 horas)
     const last24Hours = new Date();
     last24Hours.setHours(last24Hours.getHours() - 24);
 
-    const occupancyByHour = await prisma.$queryRaw`
-      SELECT 
-        EXTRACT(HOUR FROM timestamp) as hour,
-        COUNT(*) FILTER (WHERE type = 'ARRIVAL') as ocupacao,
-        COUNT(*) FILTER (WHERE type = 'RESERVATION') as reservas
-      FROM "IoTEvent"
-      WHERE timestamp >= ${last24Hours}
-      GROUP BY EXTRACT(HOUR FROM timestamp)
-      ORDER BY hour
-    ` as Array<{ hour: number; ocupacao: bigint; reservas: bigint }>;
+    let occupancyByHour: Array<{ hour: number; ocupacao: bigint; reservas: bigint }> = [];
+    
+    try {
+      occupancyByHour = await prisma.$queryRaw`
+        SELECT 
+          EXTRACT(HOUR FROM timestamp) as hour,
+          COUNT(*) FILTER (WHERE type = 'ARRIVAL') as ocupacao,
+          COUNT(*) FILTER (WHERE type = 'RESERVATION') as reservas
+        FROM "IoTEvent"
+        WHERE timestamp >= ${last24Hours}
+        GROUP BY EXTRACT(HOUR FROM timestamp)
+        ORDER BY hour
+      `;
+    } catch (err) {
+      console.error('Error fetching hourly data:', err);
+      // Continuar com array vazio
+    }
 
     // Formatar dados de ocupação por hora
     const hourlyData = Array.from({ length: 24 }, (_, i) => {
@@ -112,11 +130,21 @@ export async function GET() {
 
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
+    
+    // Retornar mais detalhes do erro
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     return NextResponse.json(
-      { error: 'Failed to fetch dashboard data' },
+      { 
+        error: 'Failed to fetch dashboard data',
+        details: errorMessage,
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   } finally {
-    await prisma.$disconnect();
+    if (process.env.NODE_ENV === 'production') {
+      await prisma.$disconnect();
+    }
   }
 }

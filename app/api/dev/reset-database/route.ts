@@ -178,9 +178,7 @@ export async function GET() {
 					result.push({
 						number,
 						type: def.type,
-						status: [SpotStatus.FREE, SpotStatus.OCCUPIED, SpotStatus.RESERVED][
-							Math.floor(Math.random() * 3)
-						] as SpotStatusEnum,
+						status: SpotStatus.FREE,
 
 						floor: Math.floor((index - 1) / 20) + 1,
 						section: String.fromCharCode(65 + Math.floor((index - 1) / 10)),

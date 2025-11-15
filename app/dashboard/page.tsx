@@ -215,7 +215,7 @@ export default function ParkingDashboard() {
               spots={data.spots} 
               selectedType={selectedType}
               onSpotClick={setSelectedSpot}
-              selectedLot={1}
+              selectedLot={"Estacionamento 1"}
             />
           </div>
           <div>
