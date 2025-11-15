@@ -134,7 +134,7 @@ export async function GET() {
         }));
 
         const formattedEvents = recentEvents.map(event => {
-            const data = event.data as { horario?: string; veiculo?: string; name?: string, nome?: string, placa?: string } | undefined;
+            const data = event.data as { horario?: string; veiculo?: string; name?: string, nome?: string, placa?: string, engarrafamento?: boolean, estacionamento?: string } | undefined;
             const horario = data?.horario; // ex: "09:00"
             let timestamp: string | null = null;
 
@@ -155,6 +155,8 @@ export async function GET() {
                 name: data?.nome ?? 'N/A',
                 spotNumber: event.spot?.number ?? 'N/A',
                 action: event.type,
+                charger: data?.engarrafamento ?? false,
+                parking: data?.estacionamento ?? 'N/A',
                 vehicle: data?.placa ?? data?.veiculo ?? 'N/A', // cobre "veiculo" do JSON
                 timestamp // string ISO ou null se não houver horario
             };

@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Activity, Check, X } from "lucide-react";
 
 
@@ -13,8 +14,13 @@ export const EventsFeed = ({ events }: { events: any[] }) => (
               {new Date(event.timestamp).toLocaleTimeString('pt-BR')}
             </span>
           </div>
+          <div className="flex items-center justify-between gap-2"> 
           <div className="text-sm text-gray-400">
-            {event.action === 'ARRIVAL' ? '🚗 Entrada' : '🚙 Saída'} - {event.vehicle}
+            {event.action === 'ARRIVAL' ? '🚗 Entrada' : '🚙 Saída'} (E-{event.parking}) - {event.vehicle}
+          </div>
+          {event.charger && (
+            <Badge variant={"destructive"} className="bg-red-500/60 border border-red-600/40 text-white">Congestionado</Badge>
+          )}
           </div>
         </div>
       ))}
