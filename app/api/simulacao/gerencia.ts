@@ -85,6 +85,7 @@ export const SimulacaoJob = {
                         parkingLot1Id: v.parkingLot1Id,
                         parkingLot2Id: v.parkingLot2Id,
                         setor_trabalho: v.setor_trabalho,
+                        tipo_carro: v.tipo_carro,
                         situacao: congestionado,
                     });
 
@@ -94,7 +95,6 @@ export const SimulacaoJob = {
                         data: {
                             type: "ARRIVAL",
                             spotId: resultado.spotId!,
-                            deviceId: "simulated-device",
                             data: {
                                 veiculo: v.tipo_carro,
                                 horario: v.arrivalTimeStr,

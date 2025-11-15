@@ -8,6 +8,7 @@ export async function alocarVaga(params: {
 	parkingLot1Id: string;
 	parkingLot2Id: string;
 	setor_trabalho: SetorTrabalho;
+	tipo_carro: SpotType;
 	situacao: boolean;
 }) {
 	const { userId, parkingLot1Id, parkingLot2Id, setor_trabalho, situacao } =
@@ -25,7 +26,8 @@ export async function alocarVaga(params: {
 		return { sucesso: false, motivo: 'Sem vaga disponível' };
 	}
 
-	const { estacionamento, tipoVaga } = resultado;
+	const { estacionamento } = resultado;
+	const tipoVaga = params.tipo_carro;
 
 	const chosenParkingLotId =
 		estacionamento === 1 ? parkingLot1Id : parkingLot2Id;
