@@ -1,14 +1,42 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
+import { randomUUID } from "crypto";
 // é um enum que recebe a chave e retorna a string
-type SpotStatus = keyof typeof SpotStatusEnum;
+type SpotStatusEnum = keyof typeof SpotStatus;
 
-const SpotStatusEnum = {
+const SpotStatus = {
   FREE: 'FREE',
   OCCUPIED: 'OCCUPIED',
   RESERVED: 'RESERVED',
 };
+
+type SpotTypeEnum = keyof typeof SpotType;
+
+const SpotType = {
+  GENERAL: 'GENERAL',
+  PCD: 'PCD',
+  ELECTRIC: 'ELECTRIC',
+  MOTORCYCLE: 'MOTORCYCLE',
+};
+
+const IoTEventType = {
+  ARRIVAL: 'ARRIVAL',
+  DEPARTURE: 'DEPARTURE',
+}
+
+type IoTEventTypeEnum = keyof typeof IoTEventType;
+
+interface IoTEvent {
+  id: string;
+  type: IoTEventTypeEnum;
+  data: {
+    confidence: number;
+    imageUrl: string;
+  };
+  vehiclePlate: string;
+  deviceId: string;
+  spotId: string;
+  timestamp: Date;
+}
 
 
 async function main() {
@@ -33,6 +61,10 @@ async function main() {
       lat: -12.9714,
       lng: -38.5014,
       totalSpots: 100, // preenchido inicialmente; outros totais serão atualizados
+      totalElectricSpots: 50,
+      totalPCDSpots: 50,
+      totalMotorcycleSpots: 50,
+      totalGeneralSpots: 50,
       workplaceId: workplace.id,
     },
   });
@@ -62,8 +94,8 @@ async function main() {
   // Criar Vagas (spots)
   const spots: {
     number: string;
-    type: SpotType;
-    status: SpotStatus;
+    type: SpotTypeEnum;
+    status: SpotStatusEnum;
     floor: number;
     section: string;
     lat: number;
@@ -72,12 +104,12 @@ async function main() {
     parkingLotId: string;
   }[] = [];
 
-  const spotPool: SpotType[] = [
-    SpotType.GENERAL,
-    SpotType.GENERAL,
-    SpotType.GENERAL,
-    SpotType.PCD,
-    SpotType.ELECTRIC,
+  const spotPool: SpotTypeEnum[] = [
+    SpotType.GENERAL as SpotTypeEnum,
+    SpotType.GENERAL as SpotTypeEnum,
+    SpotType.GENERAL as SpotTypeEnum,
+    SpotType.PCD as SpotTypeEnum,
+    SpotType.ELECTRIC as SpotTypeEnum,
   ];
 
   for (let i = 1; i <= 100; i++) {
@@ -92,7 +124,7 @@ async function main() {
       type,
       status: [SpotStatus.FREE, SpotStatus.OCCUPIED, SpotStatus.RESERVED][
         Math.floor(Math.random() * 3)
-      ] as SpotStatus,
+      ] as SpotStatusEnum,
       floor: Math.floor((i - 1) / 20) + 1,
       section: String.fromCharCode(65 + Math.floor((i - 1) / 10)),
       lat: -12.9714 + (Math.random() - 0.5) * 0.002,
@@ -160,13 +192,14 @@ async function main() {
   const createdDevices = await prisma.ioTDevice.findMany();
 
   // Criar Eventos IoT
-  const events = [];
+  const events: IoTEvent[] = [];
   for (let i = 0; i < 50; i++) {
     const spot = createdSpots[Math.floor(Math.random() * createdSpots.length)];
     const device = createdDevices[Math.floor(Math.random() * createdDevices.length)];
 
     events.push({
-      type: Math.random() > 0.5 ? IoTEventType.ARRIVAL : IoTEventType.DEPARTURE,
+      id: randomUUID(),
+      type: Math.random() > 0.5 ? "ARRIVAL"  : "DEPARTURE",
       data: {
         confidence: Math.random(),
         imageUrl: 'https://example.com/image.jpg',
@@ -178,7 +211,7 @@ async function main() {
     });
   }
 
-  await prisma.ioTEvent.createMany({ data: events });
+  await prisma.ioTEvent.createMany({ data: events as any});
 
   // Criar Logs de Ocupação
   const occupancyLogs = createdSpots.slice(0, 10).map((spot: any) => ({
