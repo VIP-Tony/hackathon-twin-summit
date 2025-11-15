@@ -18,6 +18,30 @@ type ParkingMapProps = {
   onSpotClick: (spot: any) => void;
   selectedLot: string;
 };
+function seededRandom(seed: number) {
+  return () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+}
+function shuffleDeterministic(array: any[], seedString: string) {
+  const result = array.slice();
+
+  // transforma seedString em número
+  let seed = 0;
+  for (let i = 0; i < seedString.length; i++) {
+    seed += seedString.charCodeAt(i) * (i + 1);
+  }
+
+  const random = seededRandom(seed);
+
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+
+  return result;
+}
 
 export const ParkingMap = ({ spots, selectedType, onSpotClick, selectedLot }: ParkingMapProps) => {
   const [expandedTypes, setExpandedTypes] = useState(new Set(['GENERAL', 'PCD', 'ELECTRIC', 'MOTORCYCLE']));
@@ -43,11 +67,7 @@ export const ParkingMap = ({ spots, selectedType, onSpotClick, selectedLot }: Pa
           free: typeSpots.filter(s => s.status === 'FREE').length,
           occupied: typeSpots.filter(s => s.status === 'OCCUPIED').length,
           reserved: typeSpots.filter(s => s.status === 'RESERVED').length,
-          spots: typeSpots.slice().sort((a, b) => {
-            const sectorCompare = String(a.sector).localeCompare(String(b.sector), undefined, { numeric: true });
-            if (sectorCompare !== 0) return sectorCompare;
-            return String(a.number).localeCompare(String(b.number), undefined, { numeric: true });
-          })
+          spots: shuffleDeterministic(typeSpots, type + currentLot)
         };
       }
     });

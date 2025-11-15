@@ -200,10 +200,10 @@ export default function ParkingDashboard() {
             <p className="text-gray-400 mt-1">Monitoramento em tempo real</p>
           </div>
           <div className="flex flex-row items-center gap-2">
-            <Button onClick={handleTestAplication} variant="default" size="sm" className="px-4 py-2 h-10 rounded-lg cursor-pointer bg-violet-500 hover:bg-violet-600 border border-gray-800">
+            <Button onClick={handleTestAplication} variant="default" size="sm" className="px-4 py-2 h-10 rounded-lg cursor-pointer bg-violet-500/60 hover:bg-violet-600 border border-gray-800">
               Testar Aplicação
             </Button>
-            <Button onClick={handleEraseDatabase} variant="default" size="sm" className="px-4 py-2 h-10 rounded-lg cursor-pointer bg-violet-500 hover:bg-violet-600 border border-gray-800">
+            <Button onClick={handleEraseDatabase} variant="default" size="sm" className="px-4 py-2 h-10 rounded-lg cursor-pointer bg-orange-500/60 hover:bg-orange-600 border border-gray-800">
               Limpar Banco de Dados
             </Button>
           <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 border border-gray-800">
