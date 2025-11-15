@@ -92,12 +92,12 @@ export const SimulacaoJob = {
                     this.atual++;
 
                     await prisma.ioTEvent.create({
+                    data: {
+                        type: "ARRIVAL",
+                        spotId: resultado.spotId,
                         data: {
-                            type: "ARRIVAL",
-                            spotId: resultado.spotId!,
-                            data: {
-                                veiculo: v.tipo_carro,
-                                horario: v.arrivalTimeStr,
+                            veiculo: v.tipo_carro,
+                            horario: v.arrivalTimeStr,
                             },
                         },
                     });
