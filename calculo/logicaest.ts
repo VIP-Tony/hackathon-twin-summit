@@ -4,7 +4,9 @@ export type SetorTrabalho = 'esquerda' | 'direita';
 
 export type TipoCarro = 'PCD' | 'ELECTRIC' | 'MOTORCYCLE' | 'GENERAL';
 
-export function mapSpotTypeToTipoCarro(spotType: SpotType): TipoCarro {
+
+
+export function mapearTipo(spotType: SpotType): TipoCarro {
 	switch (spotType) {
 		case 'PCD':
 			return 'PCD';
@@ -171,7 +173,7 @@ export function acharVaga(
 	);
 }
 
-export type resultado = {
+export type Resultado = {
 	estacionamento: 1 | 2;
 	tipoVaga: SpotType;
 }
@@ -180,9 +182,9 @@ export function retornarVaga(
 	tipo_carro: TipoCarro,
 	setor_trabalho: SetorTrabalho,
 	situacao: boolean,
-	vagas1: VagasInfo,
-	vagas2: VagasInfo
-): resultado | null {
+	vagas1: VagasInfo, 
+	vagas2: VagasInfo 
+): Resultado | null {
 	const lado = acharVaga(tipo_carro, setor_trabalho, situacao, vagas1, vagas2);
 	if (!lado) return null;
 
