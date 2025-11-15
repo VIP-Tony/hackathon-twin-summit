@@ -114,7 +114,7 @@ export async function GET() {
     // Formatar eventos para o formato esperado pelo frontend
     const formattedEvents = recentEvents.map(event => ({
       id: event.id,
-      deviceId: event.device.deviceId,
+     name: (event.data as { name: string })?.name || 'N/A',
       spotNumber: event.spot?.number || 'N/A',
       action: event.type,
       vehicle: event.vehiclePlate || 'N/A',

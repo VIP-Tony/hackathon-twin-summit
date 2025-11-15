@@ -34,7 +34,7 @@ const IoTEventType = {
 
 type IoTEventTypeEnum = keyof typeof IoTEventType;
 
-export async function GET() {
+export async function POST() {
 	try {
 		console.log('🚨 Resetando o banco e recriando dados...');
 

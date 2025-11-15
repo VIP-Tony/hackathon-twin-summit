@@ -7,6 +7,15 @@ import { SpotType } from "@/lib/generated/prisma/enums";
 import { MetricCard } from "./_components/MetricCard";
 import { ParkingMap } from "./_components/ParkingMap";
 import { EventsFeed } from "./_components/EventsFeed";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  ChartConfig,
+} from "@/components/ui/chart";
+import { Button } from "@/components/ui/button";
 
 interface StatsByType {
   [key: string]: any[];
@@ -55,6 +64,32 @@ export default function ParkingDashboard() {
     }
   };
 
+  const handleTestAplication = async () => {
+     try {
+      await fetch("/api/simulacao/start", {
+        method: "POST",
+      })
+    } catch (err) {
+      console.error('Erro ao buscar dados:', err);
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+    } finally {
+      // nada
+    }
+  };
+
+  const handleEraseDatabase = async () => {
+    try {
+      await fetch("/api/dev/reset-database", {
+        method: "POST",
+      })
+    } catch (err) {
+      console.error('Erro ao buscar dados:', err);
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+    } finally {
+      // nada
+    }
+  };
+
   // Buscar dados iniciais
   useEffect(() => {
     fetchDashboardData();
@@ -71,9 +106,9 @@ export default function ParkingDashboard() {
 
   const stats = useMemo(() => {
     if (!data) return null;
-    
+
     const { spots, stats: apiStats } = data;
-    
+
     const byType: StatsByType = {
       GENERAL: spots.filter(s => s.type === 'GENERAL'),
       PCD: spots.filter(s => s.type === 'PCD'),
@@ -90,7 +125,7 @@ export default function ParkingDashboard() {
 
   const chartData = useMemo(() => {
     if (!stats) return [];
-    
+
     return [
       { name: 'Geral', value: stats.byType.GENERAL.length, color: '#7C3AED' },
       { name: 'PCD', value: stats.byType.PCD.length, color: '#3B82F6' },
@@ -98,6 +133,26 @@ export default function ParkingDashboard() {
       { name: 'Moto', value: stats.byType.MOTORCYCLE.length, color: '#F59E0B' }
     ];
   }, [stats]);
+
+  const chartConfig = chartData.reduce((acc, entry, idx) => {
+    acc[entry.name] = {
+      label: entry.name,
+      // usa a cor da sua entrada
+      color: entry.color,
+    };
+    return acc;
+  }, {} as Record<string, { label: string; color: string }>);
+
+  const chartConfig2 = {
+    ocupacao: {
+      label: "Ocupação",
+      color: "#7C3AED", // roxo, por exemplo
+    },
+    reservas: {
+      label: "Reservas",
+      color: "#10B981", // verde
+    },
+  } satisfies ChartConfig;
 
   if (loading) {
     return (
@@ -116,7 +171,7 @@ export default function ParkingDashboard() {
         <div className="text-center">
           <div className="text-red-500 text-5xl mb-4">⚠️</div>
           <p className="text-gray-400">Erro ao carregar dados: {error}</p>
-          <button 
+          <button
             onClick={() => {
               setLoading(true);
               fetchDashboardData();
@@ -144,9 +199,17 @@ export default function ParkingDashboard() {
             </h1>
             <p className="text-gray-400 mt-1">Monitoramento em tempo real</p>
           </div>
+          <div className="flex flex-row items-center gap-2">
+            <Button onClick={handleTestAplication} variant="default" size="sm" className="px-4 py-2 h-10 rounded-lg cursor-pointer bg-violet-500 hover:bg-violet-600 border border-gray-800">
+              Testar Aplicação
+            </Button>
+            <Button onClick={handleEraseDatabase} variant="default" size="sm" className="px-4 py-2 h-10 rounded-lg cursor-pointer bg-violet-500 hover:bg-violet-600 border border-gray-800">
+              Limpar Banco de Dados
+            </Button>
           <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 border border-gray-800">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
             <span className="text-sm text-gray-300">Sistema Ativo</span>
+          </div>
           </div>
         </div>
 
@@ -185,9 +248,8 @@ export default function ParkingDashboard() {
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setSelectedType(null)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all ${
-              !selectedType ? 'bg-violet-500 text-white' : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
-            }`}
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${!selectedType ? 'bg-violet-500 text-white' : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
+              }`}
           >
             Todos ({data.spots.length})
           </button>
@@ -198,9 +260,8 @@ export default function ParkingDashboard() {
               <button
                 key={key}
                 onClick={() => setSelectedType(key as SpotType)}
-                className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                  selectedType === key ? 'bg-violet-500 text-white' : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${selectedType === key ? 'bg-violet-500 text-white' : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 {type.label} ({count})
@@ -212,7 +273,7 @@ export default function ParkingDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <ParkingMap
-              spots={data.spots} 
+              spots={data.spots}
               selectedType={selectedType}
               onSpotClick={setSelectedSpot}
               selectedLot={"Estacionamento 1"}
@@ -226,51 +287,71 @@ export default function ParkingDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Distribuição por Tipo</h3>
-            <ResponsiveContainer width="100%" height={250}>
+            <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
+
               <PieChart>
                 <Pie
                   data={chartData}
+                  dataKey="value"
+                  nameKey="name"
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
+                  fill="var(--color-??)"
                   label
                 >
                   {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.color}
+                    />
                   ))}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                />
+
+                <ChartTooltip content={<ChartTooltipContent />} />
+
+                <ChartLegend content={<ChartLegendContent nameKey="name" />} />
+
               </PieChart>
-            </ResponsiveContainer>
+
+            </ChartContainer>
           </div>
 
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Ocupação por Hora</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={data.hourlyData}>
+            <ChartContainer config={chartConfig2} className="min-h-[250px] w-full">
+              <LineChart
+                data={data.hourlyData}
+                accessibilityLayer // adiciona layer acessível (recomendado) :contentReference[oaicite:0]{index=0}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="hour" stroke="#9CA3AF" />
                 <YAxis stroke="#9CA3AF" />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line
+                  type="monotone"
+                  dataKey="ocupacao"
+                  stroke="var(--color-ocupacao)" // usa variável de cor do config
+                  strokeWidth={2}
                 />
-                <Line type="monotone" dataKey="ocupacao" stroke="#7C3AED" strokeWidth={2} />
-                <Line type="monotone" dataKey="reservas" stroke="#10B981" strokeWidth={2} />
+                <Line
+                  type="monotone"
+                  dataKey="reservas"
+                  stroke="var(--color-reservas)" // usa variável de cor do config
+                  strokeWidth={2}
+                />
+                <ChartLegend content={<ChartLegendContent />} />
               </LineChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </div>
         </div>
 
         {selectedSpot && (
-          <div 
+          <div
             className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
             onClick={() => setSelectedSpot(null)}
           >
-            <div 
+            <div
               className="bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-md w-full"
               onClick={(e) => e.stopPropagation()}
             >
@@ -279,31 +360,30 @@ export default function ParkingDashboard() {
                   <h3 className="text-xl font-bold text-white">Vaga {selectedSpot.number}</h3>
                   <p className="text-gray-400 text-sm mt-1">Estacionamento {selectedSpot.parkingLot} - Setor {selectedSpot.sector}</p>
                 </div>
-                <button 
+                <button
                   onClick={() => setSelectedSpot(null)}
                   className="text-gray-400 hover:text-white"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                   <span className="text-gray-400">Tipo</span>
                   <span className="text-white font-medium">{SPOT_TYPES[selectedSpot.type].label}</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                   <span className="text-gray-400">Status</span>
-                  <span className={`font-medium ${
-                    selectedSpot.status === 'FREE' ? 'text-green-400' :
-                    selectedSpot.status === 'OCCUPIED' ? 'text-red-400' :
-                    'text-yellow-400'
-                  }`}>
+                  <span className={`font-medium ${selectedSpot.status === 'FREE' ? 'text-green-400' :
+                      selectedSpot.status === 'OCCUPIED' ? 'text-red-400' :
+                        'text-yellow-400'
+                    }`}>
                     {SPOT_STATUS[selectedSpot.status].label}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                   <span className="text-gray-400">Última Atualização</span>
                   <span className="text-white text-sm">

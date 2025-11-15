@@ -34,7 +34,7 @@ export const ParkingMap = ({ spots, selectedType, onSpotClick, selectedLot }: Pa
   const typeStats = useMemo(() => {
     const types: any = {};
     const typeOrder = ['GENERAL', 'PCD', 'ELECTRIC', 'MOTORCYCLE'];
-    
+
     typeOrder.forEach(type => {
       const typeSpots = filteredSpots.filter(spot => spot.type === type);
       if (typeSpots.length > 0) {
@@ -43,17 +43,15 @@ export const ParkingMap = ({ spots, selectedType, onSpotClick, selectedLot }: Pa
           free: typeSpots.filter(s => s.status === 'FREE').length,
           occupied: typeSpots.filter(s => s.status === 'OCCUPIED').length,
           reserved: typeSpots.filter(s => s.status === 'RESERVED').length,
-          spots: typeSpots.sort((a, b) => {
-            // Ordena por setor e depois por número
-            if (a.sector !== b.sector) {
-              return a.sector.localeCompare(b.sector);
-            }
-            return a.number.localeCompare(b.number);
+          spots: typeSpots.slice().sort((a, b) => {
+            const sectorCompare = String(a.sector).localeCompare(String(b.sector), undefined, { numeric: true });
+            if (sectorCompare !== 0) return sectorCompare;
+            return String(a.number).localeCompare(String(b.number), undefined, { numeric: true });
           })
         };
       }
     });
-    
+
     return types;
   }, [filteredSpots]);
 
@@ -112,12 +110,11 @@ export const ParkingMap = ({ spots, selectedType, onSpotClick, selectedLot }: Pa
                 className="w-full p-4 flex items-center justify-between hover:bg-gray-800 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    typeInfo.color === 'blue' ? 'bg-blue-500/20 text-blue-400' :
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${typeInfo.color === 'blue' ? 'bg-blue-500/20 text-blue-400' :
                     typeInfo.color === 'green' ? 'bg-green-500/20 text-green-400' :
-                    typeInfo.color === 'orange' ? 'bg-orange-500/20 text-orange-400' :
-                    'bg-purple-500/20 text-purple-400'
-                  }`}>
+                      typeInfo.color === 'orange' ? 'bg-orange-500/20 text-orange-400' :
+                        'bg-purple-500/20 text-purple-400'
+                    }`}>
                     <TypeIcon className="w-5 h-5" strokeWidth={2.5} />
                   </div>
                   <div className="text-left">
@@ -140,19 +137,18 @@ export const ParkingMap = ({ spots, selectedType, onSpotClick, selectedLot }: Pa
                   <div className="hidden sm:flex items-center gap-2">
                     <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
                       <div
-                        className={`h-full transition-all ${
-                          Number(occupancyRate) > 80 ? 'bg-red-500' :
+                        className={`h-full transition-all ${Number(occupancyRate) > 80 ? 'bg-red-500' :
                           Number(occupancyRate) > 50 ? 'bg-yellow-500' :
-                          'bg-green-500'
-                        }`}
+                            'bg-green-500'
+                          }`}
                         style={{ width: `${occupancyRate}%` }}
                       />
                     </div>
                     <span className="text-xs font-bold text-gray-400 w-10">{occupancyRate}%</span>
                   </div>
 
-                  {isExpanded ? 
-                    <ChevronUp className="w-5 h-5 text-gray-400" /> : 
+                  {isExpanded ?
+                    <ChevronUp className="w-5 h-5 text-gray-400" /> :
                     <ChevronDown className="w-5 h-5 text-gray-400" />
                   }
                 </div>
@@ -186,20 +182,21 @@ export const ParkingMap = ({ spots, selectedType, onSpotClick, selectedLot }: Pa
 
                             <div className="relative h-full flex flex-col items-center justify-center p-2">
                               <Icon className="w-5 h-5 text-white mb-1 drop-shadow-lg" strokeWidth={2.5} />
-                              <div className="text-[11px] font-semibold text-white drop-shadow-lg">
-                                {spot.number}
+                              <div className="bg-slate-900/50 rounded-md p-1">
+                                <div className="text-[11px] font-semibold text-white drop-shadow-lg ">
+                                  {spot.number}
+                                </div>
                               </div>
                             </div>
 
                             <div className="absolute -top-20 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-20 shadow-xl border border-slate-700">
                               <div className="font-bold mb-1">{spot.number}</div>
                               <div className="text-slate-300">Setor {1}</div>
-                              <div className={`${
-                                spot.status === 'FREE' ? 'text-emerald-400' :
+                              <div className={`${spot.status === 'FREE' ? 'text-emerald-400' :
                                 spot.status === 'OCCUPIED' ? 'text-red-400' :
-                                spot.status === 'RESERVED' ? 'text-amber-400' :
-                                'text-gray-400'
-                              }`}>
+                                  spot.status === 'RESERVED' ? 'text-amber-400' :
+                                    'text-gray-400'
+                                }`}>
                                 {status.label}
                               </div>
                               <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-r border-b border-slate-700 rotate-45"></div>
