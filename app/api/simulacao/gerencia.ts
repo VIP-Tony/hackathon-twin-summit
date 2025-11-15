@@ -99,7 +99,9 @@ export const SimulacaoJob = {
                             veiculo: v.tipo_carro,
                             horario: v.arrivalTimeStr,
                             placa: v.vehiclePlate,
-                            nome: v.userName
+                            nome: v.userName,
+                            engarrafamento: v.engarrafamento,
+                            estacionamento: resultado.parkingLotId === v.parkingLot1Id ? 1 : 2,
                             },
                         },
                     });

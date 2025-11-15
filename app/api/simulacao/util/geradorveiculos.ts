@@ -51,6 +51,7 @@ export function gerarVeiculos() {
             id: i + 1,
             tipo_carro: tipos[i],
             setor_trabalho: setores[i],
+            engarrafamento: (arrival >= 480 && arrival <= 497) ? true : false,
             arrivalMinutes: arrival,
             arrivalTimeStr: formatTime(arrival),
             
