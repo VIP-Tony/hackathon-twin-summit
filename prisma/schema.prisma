@@ -33,10 +33,10 @@ model User {
 model Workplace {
   id        String   @id @default(cuid())
   name      String
-  address   String
-  city      String
-  state     String
-  zipCode   String
+  address   String?
+  city      String?
+  state     String?
+  zipCode   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
