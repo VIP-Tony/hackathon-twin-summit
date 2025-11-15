@@ -117,12 +117,14 @@ export async function POST() {
 
             const usersData = [];
 
-            const firstName = faker.person.firstName();
-            const lastName = faker.person.lastName();
-            const fullName = `${firstName} ${lastName}`;
+
 
             for (let i = 0; i < total; i++) {
                 const workplaceId = i < half ? workplace1.id : workplace2.id;
+
+                const firstName = faker.person.firstName();
+                const lastName = faker.person.lastName();
+                const fullName = `${firstName} ${lastName}`;
 
                 usersData.push({
                     name: fullName,

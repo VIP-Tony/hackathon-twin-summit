@@ -3,150 +3,164 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
     try {
-        // Testar conexão do banco primeiro
-        await prisma.$connect();
-        console.log('Database connected successfully');
-
-        // Buscar todas as vagas com informações do estacionamento
-        const spots = await prisma.parkingSpot.findMany({
-            include: {
-                parkingLot: {
-                    select: {
-                        id: true,
-                        name: true,
-                    }
-                }
-            },
-            orderBy: [
-                { parkingLotId: 'asc' },
-                { section: 'asc' },
-                { number: 'asc' }
-            ]
-        });
-
-        console.log(`Found ${spots.length} parking spots`);
-
-        // Buscar eventos recentes (últimas 15 entradas)
-        const recentEvents = await prisma.ioTEvent.findMany({
-            take: 15,
-            orderBy: {
-                timestamp: 'desc'
-            },
-            include: {
-                device: {
-                    select: {
-                        deviceId: true,
-                        name: true
-                    }
-                },
-                spot: {
-                    select: {
-                        number: true
-                    }
-                }
-            }
-        }).catch(err => {
-            console.error('Error fetching IoTEvents:', err);
-            return []; // Retornar array vazio se falhar
-        });
-
-        console.log(`Found ${recentEvents.length} recent events`);
-
-        // Buscar dados de ocupação por hora (últimas 24 horas) usando somente Prisma
         const last24Hours = new Date();
         last24Hours.setHours(last24Hours.getHours() - 24);
 
-        let eventsLast24: Array<{ type: string; timestamp: Date }> = [];
-        try {
-            // traga apenas os campos necessários para a agregação em JS
-            eventsLast24 = await prisma.ioTEvent.findMany({
+        // Executar queries em paralelo usando Promise.all
+        const [spots, recentEvents, eventsLast24] = await Promise.all([
+            // Query 1: Buscar vagas com apenas os campos necessários
+            prisma.parkingSpot.findMany({
+                select: {
+                    id: true,
+                    number: true,
+                    type: true,
+                    status: true,
+                    hasCharger: true,
+                    section: true,
+                    parkingLotId: true,
+                    updatedAt: true,
+                    parkingLot: {
+                        select: {
+                            id: true,
+                            name: true,
+                        }
+                    }
+                },
+                orderBy: [
+                    { parkingLotId: 'asc' },
+                    { section: 'asc' },
+                    { number: 'asc' }
+                ]
+            }),
+
+            // Query 2: Eventos recentes com apenas campos necessários
+            prisma.ioTEvent.findMany({
+                take: 15,
+                orderBy: {
+                    timestamp: 'desc'
+                },
+                select: {
+                    id: true,
+                    type: true,
+                    data: true,
+                    timestamp: true,
+                    device: {
+                        select: {
+                            deviceId: true,
+                            name: true
+                        }
+                    },
+                    spot: {
+                        select: {
+                            number: true
+                        }
+                    }
+                }
+            }).catch(() => []),
+
+            // Query 3: Eventos das últimas 24h com apenas campos para agregação
+            prisma.ioTEvent.findMany({
                 where: {
                     timestamp: {
                         gte: last24Hours
+                    },
+                    type: {
+                        in: ['ARRIVAL', 'RESERVATION'] // Filtrar apenas tipos relevantes
                     }
+                },
+                select: {
+                    type: true,
+                    timestamp: true,
+                    data: true
                 },
                 orderBy: {
                     timestamp: 'asc'
                 }
-            });
-        } catch (err) {
-            console.error('Error fetching events for last 24 hours:', err);
-            eventsLast24 = [];
-        }
+            }).catch(() => [])
+        ]);
 
-        // inicializar contadores por hora (0..23)
-        const hourlyCounts = Array.from({ length: 24 }, () => ({
+        // Processar estatísticas de forma eficiente com um único loop
+        const stats = {
+            total: spots.length,
+            occupied: 0,
+            free: 0,
+            reserved: 0,
+            byType: {
+                GENERAL: 0,
+                PCD: 0,
+                ELECTRIC: 0,
+                MOTORCYCLE: 0
+            }
+        };
+
+        const formattedSpots = spots.map(spot => {
+            // Calcular stats durante o mesmo loop de formatação
+            if (spot.status === 'OCCUPIED') stats.occupied++;
+            else if (spot.status === 'FREE') stats.free++;
+            else if (spot.status === 'RESERVED') stats.reserved++;
+            
+            stats.byType[spot.type as keyof typeof stats.byType]++;
+
+            return {
+                id: spot.id,
+                number: spot.number,
+                type: spot.type,
+                parkingLot: spot.parkingLot.name,
+                parkingLotId: spot.parkingLotId,
+                sector: spot.section || 'A',
+                status: spot.status,
+                hasCharger: spot.hasCharger,
+                lastUpdate: spot.updatedAt.toISOString()
+            };
+        });
+
+        // Processar dados horários de forma otimizada
+        const hourlyCounts = new Array(24).fill(null).map(() => ({
             ocupacao: 0,
             reservas: 0
         }));
 
-        // contar eventos por hora
         for (const ev of eventsLast24) {
-            const data = (ev as any).data as { horario?: string } | undefined;
+            const data = ev.data as { horario?: string } | undefined;
+            let eventDate = new Date(ev.timestamp);
 
-            let eventDate = new Date(ev.timestamp); // fallback original
-
-            // Se houver data.horario, sobrescrever apenas horas/minutos
             if (data?.horario) {
                 const [hStr, mStr] = data.horario.split(":");
-                eventDate = new Date(ev.timestamp);
-                eventDate.setHours(Number(hStr ?? 0), Number(mStr ?? 0), 0, 0);
+                eventDate.setHours(Number(hStr), Number(mStr), 0, 0);
             }
 
             const hour = eventDate.getHours();
 
-            if (ev.type === 'ARRIVAL') hourlyCounts[hour].ocupacao += 1;
-            if (ev.type === 'RESERVATION') hourlyCounts[hour].reservas += 1;
+            if (ev.type === 'ARRIVAL') {
+                hourlyCounts[hour].ocupacao++;
+            } else if (ev.type === 'RESERVATION') {
+                hourlyCounts[hour].reservas++;
+            }
         }
 
-        // Formatar dados de ocupação por hora para o frontend
         const hourlyData = hourlyCounts.map((c, i) => ({
             hour: `${i}:00`,
             ocupacao: c.ocupacao,
             reservas: c.reservas
         }));
 
-        // Calcular estatísticas
-        const stats = {
-            total: spots.length,
-            occupied: spots.filter(s => s.status === 'OCCUPIED').length,
-            free: spots.filter(s => s.status === 'FREE').length,
-            reserved: spots.filter(s => s.status === 'RESERVED').length,
-            byType: {
-                GENERAL: spots.filter(s => s.type === 'GENERAL').length,
-                PCD: spots.filter(s => s.type === 'PCD').length,
-                ELECTRIC: spots.filter(s => s.type === 'ELECTRIC').length,
-                MOTORCYCLE: spots.filter(s => s.type === 'MOTORCYCLE').length
-            }
-        };
-
-        // Formatar spots para o formato esperado pelo frontend
-        const formattedSpots = spots.map(spot => ({
-            id: spot.id,
-            number: spot.number,
-            type: spot.type,
-            parkingLot: spot.parkingLot.name,
-            parkingLotId: spot.parkingLotId,
-            sector: spot.section || 'A',
-            status: spot.status,
-            hasCharger: spot.hasCharger,
-            lastUpdate: spot.updatedAt.toISOString()
-        }));
-
+        // Formatar eventos de forma otimizada
         const formattedEvents = recentEvents.map(event => {
-            const data = event.data as { horario?: string; veiculo?: string; name?: string, nome?: string, placa?: string, engarrafamento?: boolean, estacionamento?: string } | undefined;
-            const horario = data?.horario; // ex: "09:00"
+            const data = event.data as { 
+                horario?: string; 
+                veiculo?: string; 
+                nome?: string; 
+                placa?: string; 
+                engarrafamento?: boolean; 
+                estacionamento?: string 
+            } | undefined;
+
             let timestamp: string | null = null;
 
-            if (horario) {
-                // parse "HH:mm"
-                const [hStr, mStr] = horario.split(':');
-                const hours = Number(hStr ?? 0);
-                const minutes = Number(mStr ?? 0);
-
-                // usa a data do evento (se existir) para respeitar dia/mês/ano, senão usa hoje
-                const baseDate = event.timestamp ? new Date(event.timestamp) : new Date();
-                baseDate.setHours(hours, minutes, 0, 0); // define hora/minuto/segundos/ms
+            if (data?.horario) {
+                const [hStr, mStr] = data.horario.split(':');
+                const baseDate = new Date(event.timestamp);
+                baseDate.setHours(Number(hStr), Number(mStr), 0, 0);
                 timestamp = baseDate.toISOString();
             }
 
@@ -157,11 +171,10 @@ export async function GET() {
                 action: event.type,
                 charger: data?.engarrafamento ?? false,
                 parking: data?.estacionamento ?? 'N/A',
-                vehicle: data?.placa ?? data?.veiculo ?? 'N/A', // cobre "veiculo" do JSON
-                timestamp // string ISO ou null se não houver horario
+                vehicle: data?.placa ?? data?.veiculo ?? 'N/A',
+                timestamp
             };
         });
-
 
         return NextResponse.json({
             spots: formattedSpots,
@@ -173,13 +186,10 @@ export async function GET() {
     } catch (error) {
         console.error('Error fetching dashboard data:', error);
 
-        // Retornar mais detalhes do erro
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
         return NextResponse.json(
             {
                 error: 'Failed to fetch dashboard data',
-                details: errorMessage,
+                details: error instanceof Error ? error.message : 'Unknown error',
                 timestamp: new Date().toISOString()
             },
             { status: 500 }
