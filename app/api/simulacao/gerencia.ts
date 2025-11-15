@@ -1,81 +1,85 @@
 import { prisma } from "@/lib/prisma";
 import { alocarVaga } from "@/calculo/alocarvaga";
-
-type JobStatus = "idle" | "running" | "finished";
+import { Prisma } from "@prisma/client";
 
 export const SimulacaoJob = {
-    status: "idle" as JobStatus,
+    status: "idle" as "idle" | "running" | "finished",
     total: 0,
     atual: 0,
     logs: [] as any[],
     startedAt: null as Date | null,
     finishedAt: null as Date | null,
 
-    async start(veiculos: any[]) {
-        if (this.status === "running") return;
+    fila: [] as any[],
+    processando: false,
 
+    async processarFila() {
+        if (this.processando) return;
+        this.processando = true;
+
+        while (this.fila.length > 0) {
+            const item = this.fila.shift();
+            await item();
+        }
+
+        this.processando = false;
+    },
+
+    start(veiculos: any[]) {
         this.status = "running";
+        this.total = veiculos.length;
+        this.atual = 0;
         this.startedAt = new Date();
         this.finishedAt = null;
         this.logs = [];
-        this.total = veiculos.length;
-        this.atual = 0;
 
-        console.log("SIMULAÇÃO INICIADA");
+        const INTERVALO_REAL = 90000;
 
-        for (const v of veiculos) {
-            if (this.status !== "running") break;
-
-            await new Promise((res) => setTimeout(res, 80));
-
-            const congestionado =
-                v.arrivalMinutes >= 480 && v.arrivalMinutes <= 497;
-
-            const resultado = await alocarVaga({
-                userId: v.userId,
-                parkingLot1Id: v.pl1,
-                parkingLot2Id: v.pl2,
-                setor_trabalho: v.setor_trabalho,
-                situacao: congestionado,
-            });
-
-            if (!resultado.sucesso) {
-                this.logs.push({
-                    id: v.id,
-                    tipo: v.tipo_carro,
-                    hora: v.arrivalTimeStr,
-                    status: "SEM_VAGA",
-                });
-                this.atual++;
-                continue;
+        let i = 0;
+        const timer = setInterval(() => {
+            if (i >= veiculos.length) {
+                clearInterval(timer);
+                this.status = "finished";
+                this.finishedAt = new Date();
+                return;
             }
 
-            await prisma.ioTEvent.create({
-                data: {
-                    type: "ARRIVAL",
-                    spotId: resultado.spotId!,
-                    deviceId: "simulated-device",
-                    data: {
-                        veiculo: v.tipo_carro,
-                        horario: v.arrivalTimeStr,
-                    },
-                },
+            const v = veiculos[i];
+            i++;
+
+            this.fila.push(async () => {
+                try {
+                    const congestionado =
+                        v.arrivalMinutes >= (8 * 60) &&
+                        v.arrivalMinutes <= (8 * 60 + 17);
+
+                    const resultado = await alocarVaga({
+                        userId: v.userId,
+                        parkingLot1Id: v.parkingLot1Id,
+                        parkingLot2Id: v.parkingLot2Id,
+                        setor_trabalho: v.setor_trabalho,
+                        situacao: congestionado,
+                    });
+
+                    this.atual++;
+
+                    this.logs.push({
+                        id: v.id,
+                        hora: v.arrivalTimeStr,
+                        congestionado,
+                        resultado
+                    });
+
+                } catch (err: any) {
+                    console.error("Erro ao processar veículo:", err);
+                    this.logs.push({
+                        id: v.id,
+                        erro: err.message
+                    });
+                }
             });
 
-            this.logs.push({
-                id: v.id,
-                tipo: v.tipo_carro,
-                hora: v.arrivalTimeStr,
-                status: "OK",
-                estacionamento: resultado.estacionamento,
-                tipoVaga: resultado.tipoVaga,
-            });
-
-            this.atual++;
-        }
-
-        this.finishedAt = new Date();
-        this.status = "finished";
-        console.log("SIMULAÇÃO FINALIZADA");
-    },
+            this.processarFila();
+        }, INTERVALO_REAL);
+    }
 };

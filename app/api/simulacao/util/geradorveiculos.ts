@@ -44,7 +44,7 @@ export function gerarVeiculos() {
     const veiculos = [];
 
     for (let i = 0; i < TOTAL_VEICULOS; i++) {
-        const arrival = randomInt(450, 540); // 7:30 → 9:00
+        const arrival = randomInt(450, 540);
 
         veiculos.push({
             id: i + 1,
@@ -54,9 +54,9 @@ export function gerarVeiculos() {
             arrivalTimeStr: formatTime(arrival),
 
             userId: '',
-            pl1: "cmhzuzfko0002u400hs9jrg3s",
-            pl2: "cmhzuzfwn0005u400o4w5x3n7",
-        });
+            parkingLot1Id: "cmhzuzfko0002u400hs9jrg3s",
+            parkingLot2Id: "cmhzuzfwn0005u400o4w5x3n7",
+});
     }
 
     return veiculos;
