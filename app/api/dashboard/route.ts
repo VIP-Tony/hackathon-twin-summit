@@ -82,6 +82,8 @@ export async function GET() {
 
         // contar eventos por hora
         for (const ev of eventsLast24) {
+            const data = (ev as any).data as { horario?: string } | undefined;
+
             let eventDate = new Date(ev.timestamp); // fallback original
 
             // Se houver data.horario, sobrescrever apenas horas/minutos
