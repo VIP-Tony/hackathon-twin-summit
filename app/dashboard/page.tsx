@@ -2,223 +2,137 @@
 import { SPOT_STATUS, SPOT_TYPES } from "@/components/SpotsStatusAndTypes";
 import { Car, Check, Clock, TrendingUp, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { SpotType } from "@/lib/generated/prisma/enums";
 import { MetricCard } from "./_components/MetricCard";
 import { ParkingMap } from "./_components/ParkingMap";
 import { EventsFeed } from "./_components/EventsFeed";
-import { SpotType } from "@/lib/generated/prisma/enums";
 
-// Geração de dados mockados
-const generateSpots = () => {
-  const spots = [];
-  const statuses = ['FREE', 'OCCUPIED', 'RESERVED'];
-  let id = 1;
-  
-  // ESTACIONAMENTO 1
-  for (let i = 1; i <= 5; i++) {
-    spots.push({
-      id: id++,
-      number: `E1-PCD-${i.toString().padStart(2, '0')}`,
-      type: 'PCD',
-      parkingLot: 1,
-      sector: 'A',
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
-    });
-  }
-  
-  for (let i = 1; i <= 3; i++) {
-    spots.push({
-      id: id++,
-      number: `E1-ELE-${i.toString().padStart(2, '0')}`,
-      type: 'ELECTRIC',
-      parkingLot: 1,
-      sector: 'A',
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
-    });
-  }
-  
-  for (let i = 1; i <= 60; i++) {
-    const sector = i <= 20 ? 'B' : i <= 40 ? 'C' : 'D';
-    spots.push({
-      id: id++,
-      number: `E1-${sector}-${i.toString().padStart(2, '0')}`,
-      type: 'GENERAL',
-      parkingLot: 1,
-      sector,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
-    });
-  }
-  
-  for (let i = 1; i <= 18; i++) {
-    spots.push({
-      id: id++,
-      number: `E1-E-M${i.toString().padStart(2, '0')}`,
-      type: 'MOTORCYCLE',
-      parkingLot: 1,
-      sector: 'E',
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
-    });
-  }
-  
-  // ESTACIONAMENTO 2
-  for (let i = 1; i <= 2; i++) {
-    spots.push({
-      id: id++,
-      number: `E2-PCD-${i.toString().padStart(2, '0')}`,
-      type: 'PCD',
-      parkingLot: 2,
-      sector: 'A',
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
-    });
-  }
-  
-  for (let i = 1; i <= 5; i++) {
-    spots.push({
-      id: id++,
-      number: `E2-ELE-${i.toString().padStart(2, '0')}`,
-      type: 'ELECTRIC',
-      parkingLot: 2,
-      sector: 'A',
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
-    });
-  }
-  
-  for (let i = 1; i <= 96; i++) {
-    const sector = i <= 24 ? 'B' : i <= 48 ? 'C' : i <= 72 ? 'D' : 'E';
-    spots.push({
-      id: id++,
-      number: `E2-${sector}-${i.toString().padStart(2, '0')}`,
-      type: 'GENERAL',
-      parkingLot: 2,
-      sector,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
-    });
-  }
-  
-  for (let i = 1; i <= 6; i++) {
-    spots.push({
-      id: id++,
-      number: `E2-F-M${i.toString().padStart(2, '0')}`,
-      type: 'MOTORCYCLE',
-      parkingLot: 2,
-      sector: 'F',
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      lastUpdate: new Date(Date.now() - Math.random() * 3600000).toISOString()
-    });
-  }
-  
-  return spots;
-};
+interface StatsByType {
+  [key: string]: any[];
+}
 
-const generateEvents = () => {
-  const events = [];
-  const actions = ['ARRIVAL', 'DEPARTURE'];
-  const lots = [1, 2];
-  const sectors = ['A', 'B', 'C', 'D', 'E', 'F'];
-  
-  for (let i = 0; i < 15; i++) {
-    const lot = lots[Math.floor(Math.random() * lots.length)];
-    const sector = sectors[Math.floor(Math.random() * sectors.length)];
-    const num = Math.floor(Math.random() * 20) + 1;
-    
-    events.push({
-      id: i,
-      deviceId: `IOT-${Math.floor(Math.random() * 10) + 1}`,
-      spotNumber: `E${lot}-${sector}-${num.toString().padStart(2, '0')}`,
-      action: actions[Math.floor(Math.random() * actions.length)],
-      vehicle: `ABC-${Math.floor(Math.random() * 9000) + 1000}`,
-      timestamp: new Date(Date.now() - Math.random() * 7200000).toISOString()
-    });
-  }
-  return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-};
-
-const generateHourlyData = () => {
-  const data = [];
-  for (let i = 0; i < 24; i++) {
-    data.push({
-      hour: `${i}:00`,
-      ocupacao: Math.floor(Math.random() * 40) + 10,
-      reservas: Math.floor(Math.random() * 15)
-    });
-  }
-  return data;
-};
-
+interface DashboardData {
+  spots: any[];
+  events: any[];
+  hourlyData: any[];
+  stats: {
+    total: number;
+    occupied: number;
+    free: number;
+    reserved: number;
+    byType: {
+      GENERAL: number;
+      PCD: number;
+      ELECTRIC: number;
+      MOTORCYCLE: number;
+    };
+  };
+}
 
 export default function ParkingDashboard() {
-  const [spots, setSpots] = useState(generateSpots());
-  const [events, setEvents] = useState(generateEvents());
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<SpotType | null>(null);
   const [selectedSpot, setSelectedSpot] = useState<any | null>(null);
 
+  // Função para buscar dados do dashboard
+  const fetchDashboardData = async () => {
+    try {
+      const response = await fetch('/api/dashboard');
+      if (!response.ok) {
+        throw new Error('Erro ao buscar dados do dashboard');
+      }
+      const dashboardData = await response.json();
+      setData(dashboardData);
+      setError(null);
+    } catch (err) {
+      console.error('Erro ao buscar dados:', err);
+      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Buscar dados iniciais
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  // Atualizar dados a cada 10 segundos
   useEffect(() => {
     const interval = setInterval(() => {
-      setSpots(prev => {
-        const newSpots = [...prev];
-        const randomIdx = Math.floor(Math.random() * newSpots.length);
-        const statuses = ['FREE', 'OCCUPIED', 'RESERVED'];
-        newSpots[randomIdx] = {
-          ...newSpots[randomIdx],
-          status: statuses[Math.floor(Math.random() * statuses.length)],
-          lastUpdate: new Date().toISOString()
-        };
-        return newSpots;
-      });
-
-      setEvents(prev => {
-        const lots = [1, 2];
-        const sectors = ['A', 'B', 'C', 'D', 'E', 'F'];
-        const lot = lots[Math.floor(Math.random() * lots.length)];
-        const sector = sectors[Math.floor(Math.random() * sectors.length)];
-        const num = Math.floor(Math.random() * 20) + 1;
-        
-        const newEvent = {
-          id: Date.now(),
-          deviceId: `IOT-${Math.floor(Math.random() * 10) + 1}`,
-          spotNumber: `E${lot}-${sector}-${num.toString().padStart(2, '0')}`,
-          action: Math.random() > 0.5 ? 'ARRIVAL' : 'DEPARTURE',
-          vehicle: `ABC-${Math.floor(Math.random() * 9000) + 1000}`,
-          timestamp: new Date().toISOString()
-        };
-        return [newEvent, ...prev.slice(0, 14)];
-      });
-    }, 5000);
+      fetchDashboardData();
+    }, 10000);
 
     return () => clearInterval(interval);
   }, []);
 
-  const stats: any = useMemo(() => {
-    const total = spots.length;
-    const occupied = spots.filter(s => s.status === 'OCCUPIED').length;
-    const free = spots.filter(s => s.status === 'FREE').length;
-    const reserved = spots.filter(s => s.status === 'RESERVED').length;
+  const stats = useMemo(() => {
+    if (!data) return null;
     
-    const byType = {
+    const { spots, stats: apiStats } = data;
+    
+    const byType: StatsByType = {
       GENERAL: spots.filter(s => s.type === 'GENERAL'),
       PCD: spots.filter(s => s.type === 'PCD'),
       ELECTRIC: spots.filter(s => s.type === 'ELECTRIC'),
       MOTORCYCLE: spots.filter(s => s.type === 'MOTORCYCLE')
     };
 
-    return { total, occupied, free, reserved, byType, occupancyRate: ((occupied / total) * 100).toFixed(1) };
-  }, [spots]);
+    return {
+      ...apiStats,
+      byType,
+      occupancyRate: ((apiStats.occupied / apiStats.total) * 100).toFixed(1)
+    };
+  }, [data]);
 
-  const chartData = useMemo(() => [
-    { name: 'Geral', value: stats.byType.GENERAL.length, color: '#7C3AED' },
-    { name: 'PCD', value: stats.byType.PCD.length, color: '#3B82F6' },
-    { name: 'Elétrico', value: stats.byType.ELECTRIC.length, color: '#10B981' },
-    { name: 'Moto', value: stats.byType.MOTORCYCLE.length, color: '#F59E0B' }
-  ], [stats]);
+  const chartData = useMemo(() => {
+    if (!stats) return [];
+    
+    return [
+      { name: 'Geral', value: stats.byType.GENERAL.length, color: '#7C3AED' },
+      { name: 'PCD', value: stats.byType.PCD.length, color: '#3B82F6' },
+      { name: 'Elétrico', value: stats.byType.ELECTRIC.length, color: '#10B981' },
+      { name: 'Moto', value: stats.byType.MOTORCYCLE.length, color: '#F59E0B' }
+    ];
+  }, [stats]);
 
-  const hourlyData = useMemo(() => generateHourlyData(), []);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Carregando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <p className="text-gray-400">Erro ao carregar dados: {error}</p>
+          <button 
+            onClick={() => {
+              setLoading(true);
+              fetchDashboardData();
+            }}
+            className="mt-4 px-6 py-2 bg-violet-500 hover:bg-violet-600 rounded-lg transition-colors"
+          >
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data || !stats) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -275,7 +189,7 @@ export default function ParkingDashboard() {
               !selectedType ? 'bg-violet-500 text-white' : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
             }`}
           >
-            Todos ({spots.length})
+            Todos ({data.spots.length})
           </button>
           {Object.entries(SPOT_TYPES).map(([key, type]) => {
             const Icon = type.icon;
@@ -298,14 +212,14 @@ export default function ParkingDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <ParkingMap
-              spots={spots} 
+              spots={data.spots} 
               selectedType={selectedType}
               onSpotClick={setSelectedSpot}
               selectedLot={1}
             />
           </div>
           <div>
-            <EventsFeed events={events} />
+            <EventsFeed events={data.events} />
           </div>
         </div>
 
@@ -337,7 +251,7 @@ export default function ParkingDashboard() {
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Ocupação por Hora</h3>
             <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={hourlyData}>
+              <LineChart data={data.hourlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="hour" stroke="#9CA3AF" />
                 <YAxis stroke="#9CA3AF" />
