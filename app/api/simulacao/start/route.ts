@@ -5,9 +5,7 @@ import { SimulacaoJob } from "../gerencia";
 
 export async function POST() {
     if (SimulacaoJob.status === "running") {
-        return NextResponse.json({
-            message: "Já existe uma simulação rodando."
-        });
+        SimulacaoJob.reset();
     }
 
     const usuarios = await prisma.user.findMany({
@@ -26,10 +24,6 @@ export async function POST() {
     const veiculos = gerarVeiculos();
 
     for (let i = 0; i < veiculos.length; i++) {
-        veiculos[i].userId = usuarios[i].id;
-    }
-
-        for (let i = 0; i < veiculos.length; i++) {
         veiculos[i].userId = usuarios[i].id;
         veiculos[i].parkingLot1Id = parkingLot1Id;
         veiculos[i].parkingLot2Id = parkingLot2Id;

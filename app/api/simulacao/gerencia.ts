@@ -13,6 +13,23 @@ export const SimulacaoJob = {
     fila: [] as any[],
     processando: false,
 
+    timer: null as ReturnType<typeof setInterval> | null,
+
+    reset() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        this.status = "idle";
+        this.total = 0;
+        this.atual = 0;
+        this.logs = [];
+        this.startedAt = null;
+        this.finishedAt = null;
+        this.fila = [];
+        this.processando = false;
+    },
+
     async processarFila() {
         if (this.processando) return;
         this.processando = true;
@@ -26,6 +43,13 @@ export const SimulacaoJob = {
     },
 
     start(veiculos: any[]) {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        this.fila = [];
+        this.processando = false;
+
         this.status = "running";
         this.total = veiculos.length;
         this.atual = 0;
@@ -33,12 +57,15 @@ export const SimulacaoJob = {
         this.finishedAt = null;
         this.logs = [];
 
-        const INTERVALO_REAL = 90000;
+        const INTERVALO_REAL = 350; 
 
         let i = 0;
-        const timer = setInterval(() => {
+        this.timer = setInterval(() => {
             if (i >= veiculos.length) {
-                clearInterval(timer);
+                if (this.timer) {
+                    clearInterval(this.timer);
+                    this.timer = null;
+                }
                 this.status = "finished";
                 this.finishedAt = new Date();
                 return;
@@ -63,23 +90,35 @@ export const SimulacaoJob = {
 
                     this.atual++;
 
+                    await prisma.ioTEvent.create({
+                        data: {
+                            type: "ARRIVAL",
+                            spotId: resultado.spotId!,
+                            deviceId: "simulated-device",
+                            data: {
+                                veiculo: v.tipo_carro,
+                                horario: v.arrivalTimeStr,
+                            },
+                        },
+                    });
+
                     this.logs.push({
                         id: v.id,
                         hora: v.arrivalTimeStr,
                         congestionado,
-                        resultado
+                        resultado,
                     });
 
                 } catch (err: any) {
                     console.error("Erro ao processar veículo:", err);
                     this.logs.push({
                         id: v.id,
-                        erro: err.message
+                        erro: err.message,
                     });
                 }
             });
 
             this.processarFila();
         }, INTERVALO_REAL);
-    }
+    },
 };
