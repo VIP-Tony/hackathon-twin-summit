@@ -57,7 +57,7 @@ export const SimulacaoJob = {
         this.finishedAt = null;
         this.logs = [];
 
-        const INTERVALO_REAL = 350; 
+        const INTERVALO_REAL = 1750; 
 
         let i = 0;
         this.timer = setInterval(() => {
@@ -98,6 +98,8 @@ export const SimulacaoJob = {
                         data: {
                             veiculo: v.tipo_carro,
                             horario: v.arrivalTimeStr,
+                            placa: v.vehiclePlate,
+                            nome: v.userName
                             },
                         },
                     });

@@ -25,6 +25,8 @@ export async function POST() {
 
     for (let i = 0; i < veiculos.length; i++) {
         veiculos[i].userId = usuarios[i].id;
+        veiculos[i].userName = usuarios[i].name;
+        veiculos[i].vehiclePlate = usuarios[i].vehiclePlate!;
         veiculos[i].parkingLot1Id = parkingLot1Id;
         veiculos[i].parkingLot2Id = parkingLot2Id;
     }

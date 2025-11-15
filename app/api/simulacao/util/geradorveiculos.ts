@@ -54,6 +54,9 @@ export function gerarVeiculos() {
             setor_trabalho: setores[i],
             arrivalMinutes: arrival,
             arrivalTimeStr: formatTime(arrival),
+            
+            vehiclePlate: "",
+            userName: "",
 
             userId: "",
             parkingLot1Id: "",
