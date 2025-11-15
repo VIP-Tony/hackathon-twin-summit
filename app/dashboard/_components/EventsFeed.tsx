@@ -9,7 +9,7 @@ export const EventsFeed = ({ events }: { events: any[] }) => (
         <div key={event.id} className="p-3 bg-gray-800 rounded-lg">
           <div className="flex items-center justify-between mb-1">
             <span className="text-white font-medium">{event.name}</span>
-            <span className="text-xs text-gray-500">
+            <span className="text-sm text-gray-400">
               {new Date(event.timestamp).toLocaleTimeString('pt-BR')}
             </span>
           </div>

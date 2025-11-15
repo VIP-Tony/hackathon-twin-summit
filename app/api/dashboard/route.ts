@@ -65,10 +65,6 @@ export async function GET() {
                         gte: last24Hours
                     }
                 },
-                select: {
-                    type: true,
-                    timestamp: true
-                },
                 orderBy: {
                     timestamp: 'asc'
                 }
@@ -86,7 +82,17 @@ export async function GET() {
 
         // contar eventos por hora
         for (const ev of eventsLast24) {
-            const hour = new Date(ev.timestamp).getHours(); // 0..23 (usa timezone do servidor)
+            let eventDate = new Date(ev.timestamp); // fallback original
+
+            // Se houver data.horario, sobrescrever apenas horas/minutos
+            if (data?.horario) {
+                const [hStr, mStr] = data.horario.split(":");
+                eventDate = new Date(ev.timestamp);
+                eventDate.setHours(Number(hStr ?? 0), Number(mStr ?? 0), 0, 0);
+            }
+
+            const hour = eventDate.getHours();
+
             if (ev.type === 'ARRIVAL') hourlyCounts[hour].ocupacao += 1;
             if (ev.type === 'RESERVATION') hourlyCounts[hour].reservas += 1;
         }
