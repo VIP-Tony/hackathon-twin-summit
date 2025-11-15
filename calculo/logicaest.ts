@@ -36,8 +36,8 @@ export function vagaEspecial(estacionamento: VagasInfo, tipo: TipoCarro) {
 	return false;
 }
 
-export function engarrafamento(situacao: boolean, vagas_esq: VagasInfo) {
-	return situacao && vagas_esq.vagasLivres > 0;
+export function engarrafamento(situacao: boolean, vagas_dir: VagasInfo) {
+	return situacao && vagas_dir.vagasLivres > 0;
 }
 
 export function acharVagaPcd(
@@ -46,7 +46,7 @@ export function acharVagaPcd(
 	vagas_dir: VagasInfo,
 	situacao: boolean
 ): 'esquerda' | 'direita' | null {
-	if (engarrafamento(situacao, vagas_esq)) return 'esquerda';
+	if (engarrafamento(situacao, vagas_dir)) return 'direita';
 
 	if (setor_trabalho === 'esquerda' && vagaEspecial(vagas_esq, 'PCD'))
 		return 'esquerda';
