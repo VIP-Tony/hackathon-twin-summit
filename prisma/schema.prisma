@@ -45,14 +45,6 @@ model Workplace {
 }
 
 model ParkingLot {
-  name        String
-  address     String
-  lat         Float
-  lng         Float
-  totalSpots  Int
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
   id           String   @id @default(cuid())
   name         String
   address      String
@@ -60,6 +52,14 @@ model ParkingLot {
   lng          Float
   totalSpots   Int
   totalCharger Int      @default(0)
+  totalGeneralSpots Int  
+  totalGeneralSpotsCharger Int  @default(0)
+  totalPCDSpots Int
+  totalPCDSpotsCharger Int @default(0)
+  totalElectricSpots Int
+  totalElectricSpotsCharger Int @default(0)
+  totalMotorcycleSpots Int
+  totalMotorcycleSpotsCharger Int @default(0)
   description  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
